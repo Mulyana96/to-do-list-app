@@ -1,0 +1,15 @@
+{
+	"name": "todo-list-app",
+	"version": "1.0.0",
+	"description": "Aplikasi To-Do List berbasis web menggunakan HTML, Bootstrap, dan JavaScript.",
+	"main": "index.html",
+	"scripts": {
+		"start": "npx serve .",
+		"backup": "echo 'Gunakan tombol Backup di aplikasi untuk menyimpan JSON'",
+		"lint": "echo 'Tambahkan eslint kalau perlu untuk cek code style'"
+	},
+	"author": "Mulyana",
+	"license": "MIT",
+	"dependencies": {},
+	"devDependencies": {}
+}
