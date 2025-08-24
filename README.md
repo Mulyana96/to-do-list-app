@@ -1,11 +1,11 @@
-# 📋 Aplikasi To-Do List
+# Aplikasi To-Do List
 
 Aplikasi sederhana berbasis web untuk mencatat dan mengelola kegiatan sehari-hari.  
 Dibuat dengan teknologi **HTML, Bootstrap, dan JavaScript** sehingga **responsif** dan bisa dibuka di device manapun.
 
 ---
 
-## 📂 Struktur Aplikasi
+## truktur Aplikasi
 todo-list-app/
 │
 ├── index.html # Halaman utama aplikasi (UI + script utama)
@@ -16,7 +16,7 @@ todo-list-app/
 
 ---
 
-## 🛠 Teknologi yang Digunakan
+## Teknologi yang Digunakan
 
 1. **HTML5**  
    - Membuat struktur dasar halaman web (form input, list, tombol, dll).
@@ -39,7 +39,7 @@ todo-list-app/
 
 ---
 
-## 🚀 Fitur Utama
+## Fitur Utama
 
 - Tambah kegiatan baru.  
 - Hapus kegiatan dengan tombol merah.  
@@ -50,7 +50,7 @@ todo-list-app/
 - Desain **responsif** di semua device.
 
 ---
-## 👨‍💻 Pembuat
+## Pembuat
 
 **Mulyana**
 
