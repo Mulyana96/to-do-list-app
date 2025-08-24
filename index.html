@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="id" data-bs-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aplikasi To‑Do List Kegiatan</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Efek timbul (pop) */
+      .pop-target {
+        transition:
+          transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1),
+          box-shadow 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+        will-change: transform, box-shadow;
+        /* agar tidak mengubah layout saat scale */
+        transform-origin: center;
+      }
+      .pop-target.is-pop {
+        transform: scale(1.04);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      }
+
+      /* juga beri efek saat fokus keyboard (aksesibilitas) */
+      .pop-target:focus-visible {
+        outline: none;
+        transform: scale(1.03);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      /* contoh spesifik untuk tombol dan item list (opsional) */
+      .btn.pop-target {
+        /* tombol */
+      }
+      .list-group-item.pop-target {
+        border-radius: 8px;
+      }
+
+      .task-completed .task-title {
+        text-decoration: line-through;
+        opacity: 0.7;
+      }
+      .task-completed .task-desc {
+        text-decoration: line-through;
+        opacity: 0.7;
+      }
+      .list-group-item {
+        transition:
+          background-color 0.2s ease,
+          transform 0.2s ease;
+      }
+      .list-group-item.show {
+        animation: fadeInUp 0.5s ease forwards;
+      }
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .cursor-pointer {
+        cursor: pointer;
+      }
+      .truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top shadow-sm">
+      <div class="container">
+        <a
+          class="navbar-brand fw-bold text-primary text-shadow btn-sm pop-target"
+          href="#"
+          ><i class="bi bi-check2-square me-2"></i>To‑Do Kegiatan</a
+        >
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button
+            id="btnTheme"
+            class="btn btn-outline-secondary btn-sm pop-target"
+            type="button"
+            aria-label="Toggle tema"
+          >
+            <i class="bi bi-moon-stars"></i>
+          </button>
+          <button
+            id="btnClearCompleted"
+            class="btn btn-danger btn-sm pop-target"
+            type="button"
+          >
+            <i class="bi bi-trash3"></i> Hapus yang selesai
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container py-4 shadow-sm">
+      <div class="row g-4">
+        <!-- Kolom kiri: Form tambah + statistik + backup -->
+        <div class="col-12 col-lg-5">
+          <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Tambah Kegiatan</div>
+            <div class="card-body">
+              <form id="formAdd" autocomplete="off" novalidate>
+                <div class="mb-3">
+                  <label for="title" class="form-label"
+                    >Judul <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="text"
+                    id="title"
+                    class="form-control"
+                    placeholder="Contoh: Review PR proyek"
+                    maxlength="120"
+                    required
+                  />
+                  <div class="invalid-feedback">Judul wajib diisi.</div>
+                </div>
+                <div class="mb-3">
+                  <label for="desc" class="form-label">Deskripsi</label>
+                  <textarea
+                    id="desc"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Opsional…"
+                  ></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-6">
+                    <label for="dueDate" class="form-label">Tenggat</label>
+                    <input type="date" id="dueDate" class="form-control" />
+                  </div>
+                  <div class="col-6">
+                    <label for="priority" class="form-label">Prioritas</label>
+                    <select id="priority" class="form-select">
+                      <option value="normal" selected>Normal</option>
+                      <option value="tinggi">Tinggi</option>
+                      <option value="rendah">Rendah</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="d-grid">
+                  <button
+                    class="btn btn-primary btn-sm pop-target"
+                    type="submit"
+                  >
+                    <i class="bi bi-plus-circle me-1"></i> Tambah
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card shadow-sm mt-3">
+            <div
+              class="card-body d-flex flex-wrap gap-2 align-items-center justify-content-between"
+            >
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="badge text-bg-primary"
+                  >Total: <span id="statTotal">0</span></span
+                >
+                <span class="badge text-bg-success"
+                  >Selesai: <span id="statDone">0</span></span
+                >
+                <span class="badge text-bg-warning text-dark"
+                  >Aktif: <span id="statActive">0</span></span
+                >
+              </div>
+              <div class="d-flex gap-2">
+                <button
+                  id="btnExport"
+                  class="btn btn-danger btn-sm pop-target"
+                  type="button"
+                >
+                  <i class="bi bi-download"></i> Backup
+                </button>
+                <input
+                  type="file"
+                  id="importFile"
+                  class="d-none"
+                  accept="application/json"
+                />
+                <button
+                  id="btnImport"
+                  class="btn btn-primary btn-sm pop-target"
+                  type="button"
+                >
+                  <i class="bi bi-upload"></i> Import
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom kanan: Filter + daftar -->
+        <div class="col-12 col-lg-7">
+          <div class="card shadow-sm">
+            <div class="card-header">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-sm-5">
+                  <input
+                    type="text"
+                    id="search"
+                    class="form-control"
+                    placeholder="Cari judul/deskripsi…"
+                  />
+                </div>
+                <div class="col-6 col-sm-3">
+                  <select id="filterStatus" class="form-select">
+                    <option value="all">Semua</option>
+                    <option value="active">Aktif</option>
+                    <option value="completed">Selesai</option>
+                  </select>
+                </div>
+                <div class="col-6 col-sm-4">
+                  <select id="sortBy" class="form-select">
+                    <option value="created_desc">Urut: Terbaru</option>
+                    <option value="created_asc">Urut: Terlama</option>
+                    <option value="due_asc">Tenggat Terdekat</option>
+                    <option value="due_desc">Tenggat Terjauh</option>
+                    <option value="prio_desc">Prioritas Tinggi</option>
+                    <option value="prio_asc">Prioritas Rendah</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <ul id="list" class="list-group list-group-flush"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-body-tertiary py-3 mt-4 shadow-sm">
+      <div class="container text-center small text-primary">
+        Dibuat oleh <strong>Mulyana</strong>
+      </div>
+    </footer>
+
+    <!-- Modal Edit -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="formEdit" autocomplete="off" novalidate>
+            <div class="modal-header">
+              <h5 class="modal-title">Edit Kegiatan</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="editId" />
+              <div class="mb-3">
+                <label for="editTitle" class="form-label"
+                  >Judul <span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  id="editTitle"
+                  class="form-control"
+                  required
+                  maxlength="120"
+                />
+                <div class="invalid-feedback">Judul wajib diisi.</div>
+              </div>
+              <div class="mb-3">
+                <label for="editDesc" class="form-label">Deskripsi</label>
+                <textarea
+                  id="editDesc"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+              </div>
+              <div class="row g-3">
+                <div class="col-6">
+                  <label for="editDueDate" class="form-label">Tenggat</label>
+                  <input type="date" id="editDueDate" class="form-control" />
+                </div>
+                <div class="col-6">
+                  <label for="editPriority" class="form-label">Prioritas</label>
+                  <select id="editPriority" class="form-select">
+                    <option value="normal">Normal</option>
+                    <option value="tinggi">Tinggi</option>
+                    <option value="rendah">Rendah</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-danger btn-sm pop-target"
+                data-bs-dismiss="modal"
+              >
+                Batal
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm pop-target">
+                Simpan Perubahan
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // ====== Storage & State ======
+      const STORAGE_KEY = "todo-app-v1";
+      const THEME_KEY = "todo-theme";
+
+      /** @type {Array<{id:number,title:string,desc:string,dueDate:string|null,priority:'rendah'|'normal'|'tinggi',completed:boolean,createdAt:number,updatedAt:number}>} */
+      let tasks = [];
+
+      // ====== Helpers ======
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => document.querySelectorAll(sel);
+
+      function saveTasks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        updateStats();
+      }
+
+      function loadTasks() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          tasks = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          console.error("Gagal parse storage:", e);
+          tasks = [];
+        }
+      }
+
+      function setTheme(theme) {
+        document.documentElement.setAttribute("data-bs-theme", theme);
+        localStorage.setItem(THEME_KEY, theme);
+        $("#btnTheme i").className =
+          theme === "dark" ? "bi bi-sun" : "bi bi-moon-stars";
+      }
+
+      function toggleTheme() {
+        const current = localStorage.getItem(THEME_KEY) || "light";
+        setTheme(current === "light" ? "dark" : "light");
+      }
+
+      function priorityWeight(p) {
+        return p === "tinggi" ? 3 : p === "normal" ? 2 : 1; // rendah = 1
+      }
+
+      function formatDateLocal(dateStr) {
+        if (!dateStr) return "-";
+        const d = new Date(dateStr + "T00:00:00");
+        if (isNaN(d)) return "-";
+        return d.toLocaleDateString("id-ID", {
+          weekday: "short",
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+      }
+
+      function todayISO() {
+        const d = new Date();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${d.getFullYear()}-${m}-${day}`;
+      }
+
+      function isOverdue(dateStr) {
+        if (!dateStr) return false;
+        const now = new Date(todayISO());
+        const due = new Date(dateStr);
+        return due < now; // Lewat dari hari ini
+      }
+
+      // ====== Rendering ======
+      const listEl = $("#list");
+
+      function renderTasks() {
+        const q = ($("#search").value || "").toLowerCase().trim();
+        const status = $("#filterStatus").value;
+        const sortBy = $("#sortBy").value;
+
+        let filtered = tasks.filter((t) => {
+          const matchText =
+            t.title.toLowerCase().includes(q) ||
+            (t.desc || "").toLowerCase().includes(q);
+          const matchStatus =
+            status === "all"
+              ? true
+              : status === "completed"
+                ? t.completed
+                : !t.completed;
+          return matchText && matchStatus;
+        });
+
+        filtered.sort((a, b) => {
+          switch (sortBy) {
+            case "created_asc":
+              return a.createdAt - b.createdAt;
+            case "created_desc":
+              return b.createdAt - a.createdAt;
+            case "due_asc": {
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+              return ad - bd;
+            }
+            case "due_desc": {
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : -Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : -Infinity;
+              return bd - ad;
+            }
+            case "prio_desc":
+              return priorityWeight(b.priority) - priorityWeight(a.priority);
+            case "prio_asc":
+              return priorityWeight(a.priority) - priorityWeight(b.priority);
+            default:
+              return 0;
+          }
+        });
+
+        if (filtered.length === 0) {
+          listEl.innerHTML =
+            '<li class="list-group-item py-4 text-center text-muted">Tidak ada data</li>';
+          return;
+        }
+
+        listEl.innerHTML = filtered
+          .map((t) => {
+            const overdue = isOverdue(t.dueDate) && !t.completed;
+            const badges = [
+              t.priority === "tinggi"
+                ? '<span class="badge text-bg-danger ms-1">Tinggi</span>'
+                : "",
+              t.priority === "normal"
+                ? '<span class="badge text-bg-secondary ms-1">Normal</span>'
+                : "",
+              t.priority === "rendah"
+                ? '<span class="badge text-bg-success ms-1">Rendah</span>'
+                : "",
+              t.dueDate
+                ? `<span class="badge ${overdue ? "text-bg-warning text-dark" : "text-bg-info"} ms-1" title="Tenggat">${overdue ? "Terlambat: " : "Tenggat: "}${formatDateLocal(t.dueDate)}</span>`
+                : "",
+            ].join("");
+
+            return `
+          <li class="list-group-item ${t.completed ? "task-completed" : ""} show">
+            <div class="d-flex align-items-start gap-3">
+              <div class="form-check mt-1">
+                <input class="form-check-input task-toggle" type="checkbox" data-id="${t.id}" ${t.completed ? "checked" : ""} aria-label="Tandai selesai">
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <div>
+                    <div class="task-title fw-semibold">${escapeHtml(t.title)} ${badges}</div>
+                    ${t.desc ? `<div class="task-desc text-muted small mt-1">${escapeHtml(t.desc)}</div>` : ""}
+                    <div class="text-muted small mt-1">Dibuat: ${new Date(t.createdAt).toLocaleString("id-ID")}</div>
+                  </div>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-danger delete-btn" data-id="${t.id}" title="Hapus"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-outline-secondary edit-btn" data-id="${t.id}" title="Edit"><i class="bi bi-pencil-square"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>`;
+          })
+          .join("");
+      }
+
+      function updateStats() {
+        const total = tasks.length;
+        const done = tasks.filter((t) => t.completed).length;
+        $("#statTotal").textContent = String(total);
+        $("#statDone").textContent = String(done);
+        $("#statActive").textContent = String(total - done);
+      }
+
+      // Escape untuk mencegah XSS sederhana
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      // ====== Actions ======
+      function addTask({ title, desc, dueDate, priority }) {
+        const now = Date.now();
+        const task = {
+          id: now + Math.floor(Math.random() * 1000),
+          title: title.trim(),
+          desc: (desc || "").trim(),
+          dueDate: dueDate || null,
+          priority: priority || "normal",
+          completed: false,
+          createdAt: now,
+          updatedAt: now,
+        };
+        tasks.unshift(task);
+        saveTasks();
+        renderTasks();
+      }
+
+      function updateTask(id, patch) {
+        const idx = tasks.findIndex((t) => t.id === id);
+        if (idx === -1) return;
+        tasks[idx] = { ...tasks[idx], ...patch, updatedAt: Date.now() };
+        saveTasks();
+        renderTasks();
+      }
+
+      function deleteTask(id) {
+        const idx = tasks.findIndex((t) => t.id === id);
+        if (idx === -1) return;
+        tasks.splice(idx, 1);
+        saveTasks();
+        renderTasks();
+      }
+
+      function clearCompleted() {
+        const any = tasks.some((t) => t.completed);
+        if (!any) {
+          alert("Tidak ada tugas yang selesai.");
+          return;
+        }
+        if (confirm("Hapus semua tugas yang sudah ditandai selesai?")) {
+          tasks = tasks.filter((t) => !t.completed);
+          saveTasks();
+          renderTasks();
+        }
+      }
+
+      // ====== Event Bindings ======
+      document.addEventListener("DOMContentLoaded", () => {
+        // Theme
+        setTheme(localStorage.getItem(THEME_KEY) || "light");
+        $("#btnTheme").addEventListener("click", toggleTheme);
+
+        // Set min date = hari ini (opsional, masih boleh kosong)
+        const min = todayISO();
+        $("#dueDate").setAttribute("min", min);
+        $("#editDueDate").setAttribute("min", min);
+
+        // Load & render
+        loadTasks();
+        updateStats();
+        renderTasks();
+
+        // Form tambah
+        $("#formAdd").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const title = $("#title");
+          const desc = $("#desc");
+          const due = $("#dueDate");
+          const prio = $("#priority");
+
+          if (!title.value.trim()) {
+            title.classList.add("is-invalid");
+            title.focus();
+            return;
+          }
+          title.classList.remove("is-invalid");
+
+          addTask({
+            title: title.value,
+            desc: desc.value,
+            dueDate: due.value || null,
+            priority: prio.value,
+          });
+
+          // Reset form
+          e.target.reset();
+          prio.value = "normal";
+          title.focus();
+        });
+
+        // Pencarian & filter & sort
+        $("#search").addEventListener("input", renderTasks);
+        $("#filterStatus").addEventListener("change", renderTasks);
+        $("#sortBy").addEventListener("change", renderTasks);
+
+        // List actions (event delegation)
+        listEl.addEventListener("click", (e) => {
+          const delBtn = e.target.closest(".delete-btn");
+          if (delBtn) {
+            const id = Number(delBtn.dataset.id);
+            if (confirm("Hapus tugas ini?")) deleteTask(id);
+            return;
+          }
+
+          const editBtn = e.target.closest(".edit-btn");
+          if (editBtn) {
+            const id = Number(editBtn.dataset.id);
+            const t = tasks.find((x) => x.id === id);
+            if (!t) return;
+            $("#editId").value = String(t.id);
+            $("#editTitle").value = t.title;
+            $("#editDesc").value = t.desc || "";
+            $("#editDueDate").value = t.dueDate || "";
+            $("#editPriority").value = t.priority;
+            const modal = bootstrap.Modal.getOrCreateInstance($("#editModal"));
+            modal.show();
+            return;
+          }
+        });
+
+        listEl.addEventListener("change", (e) => {
+          if (e.target.classList.contains("task-toggle")) {
+            const id = Number(e.target.dataset.id);
+            updateTask(id, { completed: e.target.checked });
+          }
+        });
+
+        // Edit form submit
+        $("#formEdit").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const id = Number($("#editId").value);
+          const title = $("#editTitle").value.trim();
+          const desc = $("#editDesc").value;
+          const due = $("#editDueDate").value || null;
+          const prio = $("#editPriority").value;
+          if (!title) {
+            $("#editTitle").classList.add("is-invalid");
+            return;
+          }
+          $("#editTitle").classList.remove("is-invalid");
+          updateTask(id, { title, desc, dueDate: due, priority: prio });
+          const modal = bootstrap.Modal.getOrCreateInstance($("#editModal"));
+          modal.hide();
+        });
+
+        // Hapus yang selesai
+        $("#btnClearCompleted").addEventListener("click", clearCompleted);
+
+        // Backup / Export
+        $("#btnExport").addEventListener("click", () => {
+          const blob = new Blob([JSON.stringify(tasks, null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const ts = new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace(/[:T]/g, "-");
+          a.href = url;
+          a.download = `todo-backup-${ts}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        });
+
+        // Import
+        $("#btnImport").addEventListener("click", () =>
+          $("#importFile").click(),
+        );
+        $("#importFile").addEventListener("change", (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const data = JSON.parse(reader.result);
+              if (!Array.isArray(data)) throw new Error("Format tidak valid");
+              // Validasi minimal
+              tasks = data.filter(
+                (x) =>
+                  x && typeof x.id === "number" && typeof x.title === "string",
+              );
+              saveTasks();
+              renderTasks();
+              alert("Import berhasil.");
+            } catch (err) {
+              alert("Gagal import: " + err.message);
+            }
+            e.target.value = "";
+          };
+          reader.readAsText(file);
+        });
+      });
+      // Cara pakai: tambahkan class "pop-target" pada elemen yang ingin diberi efek
+      // Contoh: <li class="list-group-item pop-target">...</li>
+
+      // Menangani mouse hover dan touch (cukup sekali panggil)
+      (function enablePopEffect(root = document) {
+        const TOUCH_REMOVE_DELAY = 350; // ms, berapa lama class disimpan setelah touch
+        // Delegasi: pasang listener pada document, target berdasarkan class .pop-target
+        // Mouse
+        root.addEventListener(
+          "mouseenter",
+          (e) => {
+            const t = e.target.closest && e.target.closest(".pop-target");
+            if (!t) return;
+            t.classList.add("is-pop");
+          },
+          true,
+        );
+
+        root.addEventListener(
+          "mouseleave",
+          (e) => {
+            const t = e.target.closest && e.target.closest(".pop-target");
+            if (!t) return;
+            t.classList.remove("is-pop");
+          },
+          true,
+        );
+
+        // Touch (untuk perangkat sentuh)
+        let lastTouchTimeout = new WeakMap();
+        root.addEventListener(
+          "touchstart",
+          (e) => {
+            const t = e.target.closest && e.target.closest(".pop-target");
+            if (!t) return;
+            // hapus timeout sebelumnya jika ada
+            if (lastTouchTimeout.has(t)) clearTimeout(lastTouchTimeout.get(t));
+            t.classList.add("is-pop");
+          },
+          { passive: true, capture: true },
+        );
+
+        root.addEventListener(
+          "touchend",
+          (e) => {
+            const t = e.target.closest && e.target.closest(".pop-target");
+            if (!t) return;
+            // tetap tunjukkan effect sebentar agar terasa (mis. 250-350ms)
+            const to = setTimeout(
+              () => t.classList.remove("is-pop"),
+              TOUCH_REMOVE_DELAY,
+            );
+            lastTouchTimeout.set(t, to);
+          },
+          { passive: true, capture: true },
+        );
+
+        root.addEventListener(
+          "touchcancel",
+          (e) => {
+            const t = e.target.closest && e.target.closest(".pop-target");
+            if (!t) return;
+            if (lastTouchTimeout.has(t)) clearTimeout(lastTouchTimeout.get(t));
+            t.classList.remove("is-pop");
+          },
+          { passive: true, capture: true },
+        );
+      })(document);
+    </script>
+  </body>
+</html>
